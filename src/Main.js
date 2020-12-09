@@ -1,7 +1,7 @@
 
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, Button, Alert, Dimensions, Modal } from 'react-native';
+import { StyleSheet, Text, Button, Alert, Dimensions, Modal, TouchableHighlight } from 'react-native';
 import { Container, Content, List, ListItem, Left, Thumbnail, Body, View, Header, Icon, Title, Right} from 'native-base';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from "@react-navigation/stack";
@@ -14,8 +14,6 @@ const db = SQLite.openDatabase('db.NotesTest')
 
 export default function NotesStack(){
 
-  const [modalVisible, setModalVisibility] = useState(false)
-
   return(
     <NavigationContainer>
     <Stack.Navigator> 
@@ -26,11 +24,7 @@ export default function NotesStack(){
                       headerTitleStyle: styles.header,
                       headerStyle: {
                         height: Math.round(Dimensions.get('window').height)/8,
-                      },
-                      headerRight: () => (<Button 
-                        onPress={() => setModalVisibility(true)} 
-                        title="Add   " 
-                        color="#000"/>)}}/>
+                      } }}/>
       <Stack.Screen name="Notes" 
                     component={DetailsScreen} 
                     options={{title: "", headerRight: () => (
@@ -45,11 +39,8 @@ export default function NotesStack(){
 
 function MainScreen( { navigation } ) {
 
-  const [data, setData] = useState([
-    {
-      _array: []
-    },
-  ])
+  const [data, setData] = useState([])
+  const [modalVisible, setModalVisibility] = useState(false)
 
   function writeTable() {
     db.transaction(tx => {
@@ -65,9 +56,9 @@ function MainScreen( { navigation } ) {
     })
   }
 
+  
   useEffect(() => {
-    console.log('componentDidLoad 20th time')
-    console.log(data)
+    console.log('componentDidLoad 21st time')
     //Create table
     db.transaction(tx => {
       tx.executeSql('CREATE TABLE IF NOT EXISTS Notes (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, content TEXT)', null, 
@@ -76,9 +67,10 @@ function MainScreen( { navigation } ) {
     //Read Table
     db.transaction(tx => {
       tx.executeSql('SELECT * FROM  Notes', null,
-        (txObj, { rows: { _array } }) => {
+        (txObj, notes ) => {
           console.log('Table has been read')
-          setData( { _array } )
+          setData(notes.rows._array)
+          console.log(data)
         }, 
         (txObj, error) => console.log('Error 2', error)
         )
@@ -86,22 +78,23 @@ function MainScreen( { navigation } ) {
 
     //Dummmy Data 
 
-    db.transaction(tx => {
-      tx.executeSql('INSERT INTO  Notes (title, content) VALUES (?, ?)', ["Notes from Econ Lecture", "Who am I kidding I did not show up"],
-      (txObj, resultSet) => {
-        setData(data._array.push({ id: resultSet.insertId, title: 'Notes from Econ Lecture', content: 'Who am I kidding I did not show up' }) )
-        console.log("Data:", data)},
-      (txObj, error) => console.log('Error 3', error))
-    })
+    // db.transaction(tx => {
+    //   tx.executeSql('INSERT INTO  Notes (title, content) VALUES (?, ?)', ["Notes from Econ Lecture", "Who am I kidding I did not show up"],
+    //   (txObj, resultSet) => {
+    //     setData(data.push({ id: resultSet.insertId, title: 'Notes from Econ Lecture', content: 'Who am I kidding I did not show up' }) )
+    //     console.log("Data:", data)},
+    //   (txObj, error) => console.log('Error 3', error))
+    // })
   }, []) //componentDidLoad()
-  console.log("Initial:", data._array)
+
+  
   return (
     <Container>
       <Content>
         <List>
-          {/* {
-            data._array.map((item) => (
-              <ListItem avatar key={item.title} onPress={() => navigation.navigate("Notes", {title: item.title, content: item.content}) }>
+          {
+            data.map((item) => (
+              <ListItem avatar key={item.id} onPress={() => navigation.navigate("Notes", {title: item.title, content: item.content}) }>
                 <Body>
                   <Text style ={styles.titleText}>{item.title}</Text>
                   <Text note numberOfLines={1} style={styles.contentText}>
@@ -110,8 +103,26 @@ function MainScreen( { navigation } ) {
                 </Body>
               </ListItem>
             ))
-          } */}
+          }
         </List>
+        <Modal
+        animationType="slide"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => {
+          Alert.alert("Modal has been closed."); }}>
+        <View style={styles.centeredView}>
+          <View style={styles.modalView}>
+            <Text style={styles.modalText}>Hello World!</Text>
+              <TouchableHighlight
+              style={{ ...styles.openButton, backgroundColor: "#2196F3" }}
+              onPress={() => {
+                setModalVisible(!modalVisible); }}>
+                <Text style={styles.textStyle}>Hide Modal</Text>
+              </TouchableHighlight>
+            </View>
+          </View>
+        </Modal>
       </Content>
     </Container>
   );
